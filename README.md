@@ -1,6 +1,3 @@
-# flutter_star_micronics
-
-Star Micronics printer for Flutter
-
+# Star Micronics Printer for Flutter
 ## WIP
 
