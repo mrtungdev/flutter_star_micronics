@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
-
-import 'package:flutter/services.dart';
+import 'package:flutter_star_micronics/enums.dart';
 import 'package:flutter_star_micronics/flutter_star_micronics.dart';
 
 void main() {
@@ -21,7 +19,7 @@ class _MyAppState extends State<MyApp> {
 
   void onDiscoveryTCP() async {
     try {
-      final d = FlutterStarMicronics.onDiscovery(
+      final d = await FlutterStarMicronics.onDiscovery(
           type: StarMicronicsDiscoveryType.TCP);
       print("onDiscoveryTCP $d");
     } catch (e) {
@@ -29,12 +27,17 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
+  void onShowLogs() {}
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
           title: const Text('Flutter Star Micronics'),
+          actions: [
+            IconButton(icon: Icon(Icons.bug_report), onPressed: onShowLogs)
+          ],
         ),
         body: Container(
           padding: const EdgeInsets.all(20),

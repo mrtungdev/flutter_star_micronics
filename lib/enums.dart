@@ -1,0 +1,1 @@
+enum StarMicronicsDiscoveryType { TCP, BLUETOOTH }

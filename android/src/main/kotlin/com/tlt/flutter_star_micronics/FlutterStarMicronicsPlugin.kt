@@ -12,7 +12,26 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import com.google.gson.Gson
 
+interface JSONConvertable {
+  fun toJSON(): String = Gson().toJson(this)
+}
+
+inline fun <reified T : JSONConvertable> String.toObject(): T = Gson().fromJson(this, T::class.java)
+
+data class StarMicronicsResult(
+        var type: String? = null,
+        var success: Boolean? = null,
+        var message: String? = null,
+        var content: Any? = null
+): JSONConvertable
+
+class StarPrinterInfo(
+        var address: String? = null,
+        var portName: String? = null,
+        var model: String? = null
+): JSONConvertable
 
 /** FlutterStarMicronicsPlugin */
 class FlutterStarMicronicsPlugin: FlutterPlugin, MethodCallHandler {
@@ -29,11 +48,6 @@ class FlutterStarMicronicsPlugin: FlutterPlugin, MethodCallHandler {
   }
 
   override fun onMethodCall(@NonNull call: MethodCall, @NonNull rawResult: Result) {
-//    if (call.method == "getPlatformVersion") {
-//      result.success("Android ${android.os.Build.VERSION.RELEASE}")
-//    } else {
-//      result.notImplemented()
-//    }
     val result: MethodResultWrapper = MethodResultWrapper(rawResult)
     Thread(MethodRunner(call, result)).start()
   }
@@ -51,6 +65,9 @@ class FlutterStarMicronicsPlugin: FlutterPlugin, MethodCallHandler {
         "discovery" -> {
           onDiscovery(call, result)
         }
+        "print" -> {
+          onPrint(call, result)
+        }
         else -> result.notImplemented()
       }
     }
@@ -59,6 +76,7 @@ class FlutterStarMicronicsPlugin: FlutterPlugin, MethodCallHandler {
   private fun onDiscovery(@NonNull call: MethodCall, @NonNull result: Result) {
 //    val arrayDiscovery: MutableList<PortInfo> = mutableListOf<PortInfo>()
     val printType: String = call.argument<String>("type") as String
+    Log.d(logTag, "onDiscovery type: $printType")
     when (printType) {
       "tcp" -> {
         onDiscoveryTCP(call, result)
@@ -68,17 +86,39 @@ class FlutterStarMicronicsPlugin: FlutterPlugin, MethodCallHandler {
   }
 
   private fun onDiscoveryTCP(@NonNull call: MethodCall, @NonNull result: Result){
+    var resp = StarMicronicsResult()
     try {
+      var printers: MutableList<StarPrinterInfo> = ArrayList()
       val portList: List<PortInfo> = StarIOPort.searchPrinter("TCP:")
       for (port in portList) {
-        Log.d(logTag, port.toString())
-        Log.i(logTag, "Port Name: " + port.getPortName())
-        Log.i(logTag, "MAC Address: " + port.getMacAddress())
-        Log.i(logTag, "Model Name: " + port.getModelName())
+        Log.i(logTag, "Port Name: " + port.portName)
+        Log.i(logTag, "MAC Address: " + port.macAddress)
+        Log.i(logTag, "Model Name: " + port.modelName)
+        var printer = StarPrinterInfo(port.macAddress, port.portName, port.modelName)
+        printers.add(printer)
       }
+      resp.success = true
+      resp.message= "Successfully!"
+      resp.content = printers;
+      result.success(resp.toJSON())
+    } catch (e: StarIOPortException) {
+      e.printStackTrace()
+      resp.success = false
+      resp.message =  "Unconnected"
+      result.success(resp.toJSON())
+    }
+  }
+
+
+  private fun onPrint(@NonNull call: MethodCall, @NonNull result: Result){
+    var resp = StarMicronicsResult()
+    try {
 
     } catch (e: StarIOPortException) {
-      // An error occurred.
+      e.printStackTrace()
+      resp.success = false
+      resp.message =  "Print error"
+      result.success(resp.toJSON())
     }
   }
 
