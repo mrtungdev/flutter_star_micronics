@@ -80,4 +80,6 @@ class StarMicronicsUltilities {
     return starMicronicsModels
         .firstWhere((element) => element.models.indexOf(modelName) > -1);
   }
+
+  static isCommandSupport(String command, String emulation) {}
 }
