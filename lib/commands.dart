@@ -9,8 +9,11 @@ class StarMicronicsCommand {
     return enumName.toString();
   }
 
-  Map<String, dynamic> appendEncoding(StarEncoding encode) {
-    return {"id": "appendEncoding", "value": _enumText(encode)};
+  Map<String, dynamic> appendEncoding({StarEncoding encoding}) {
+    return {
+      "id": "appendEncoding",
+      "value": _enumText(encoding ?? StarEncoding.UTF8)
+    };
   }
 
   Map<String, dynamic> append(dynamic data) {

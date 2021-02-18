@@ -5,22 +5,23 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import androidx.annotation.NonNull
+import com.google.gson.Gson
 import com.starmicronics.stario.PortInfo
 import com.starmicronics.stario.StarIOPort
 import com.starmicronics.stario.StarIOPortException
-import io.flutter.embedding.engine.plugins.FlutterPlugin
-import io.flutter.plugin.common.MethodCall
-import io.flutter.plugin.common.MethodChannel
-import io.flutter.plugin.common.MethodChannel.MethodCallHandler
-import io.flutter.plugin.common.MethodChannel.Result
-import com.google.gson.Gson
 import com.starmicronics.stario.StarPrinterStatus
 import com.starmicronics.starioextension.ICommandBuilder
 import com.starmicronics.starioextension.StarIoExt
 import com.starmicronics.starioextension.StarIoExt.Emulation
 import com.starmicronics.starioextension.StarIoExtManager
+import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.BinaryMessenger
+import io.flutter.plugin.common.MethodCall
+import io.flutter.plugin.common.MethodChannel
+import io.flutter.plugin.common.MethodChannel.MethodCallHandler
+import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry
+import java.nio.charset.Charset
 
 interface JSONConvertable {
   fun toJSON(): String = Gson().toJson(this)
@@ -47,21 +48,21 @@ class FlutterStarMicronicsPlugin: FlutterPlugin, MethodCallHandler {
   ///
   /// This local reference serves to register the plugin with the Flutter Engine and unregister it
   /// when the Flutter Engine is detached from the Activity
-  protected var starIoExtManager: StarIoExtManager? = null
+  private var starIoExtManager: StarIoExtManager? = null
   companion object {
     protected lateinit var applicationContext: Context
 
     @JvmStatic
     fun registerWith(registrar: PluginRegistry.Registrar) {
-      val channel = MethodChannel(registrar.messenger(), "flutter_star_prnt")
+      val channel = MethodChannel(registrar.messenger(), "flutter_star_micronics_sdk")
       channel.setMethodCallHandler(FlutterStarMicronicsPlugin())
       FlutterStarMicronicsPlugin.setupPlugin(registrar.messenger(), registrar.context())
     }
     @JvmStatic
     fun setupPlugin(messenger: BinaryMessenger, context: Context) {
       try {
-        applicationContext = context.getApplicationContext()
-        val channel = MethodChannel(messenger, "StarMicronicsSDK")
+        applicationContext = context.applicationContext
+        val channel = MethodChannel(messenger, "flutter_star_micronics_sdk")
         channel.setMethodCallHandler(FlutterStarMicronicsPlugin())
       } catch (e: Exception) {
         Log.e("StarMicronicsSDK", "Registration failed", e)
@@ -71,16 +72,17 @@ class FlutterStarMicronicsPlugin: FlutterPlugin, MethodCallHandler {
 
   private lateinit var channel : MethodChannel
   private var logTag: String = "StarMicronicsSDK"
-  private var commandsSupport: Map<String, Boolean> = mapOf("appendEncoding" to true, "append" to true, "appendRaw" to true, "appendFontStyle" to true, "appendCodePage" to true, "appendInternational" to true, "appendLineFeed" to true, "appendUnitFeed" to true, "appendCharacterSpace" to true, "appendLineSpace" to true, "appendEmphasis" to true, "appendInvert" to true, "appendMultiple" to true, "appendUnderLine" to true, "appendAbsolutePosition" to true, "appendAlignment" to true, "appendHorizontalTabPosition" to true, "appendCutPaper" to true, "appendPeripheral" to true, "appendSound" to true, "appendBarcode" to true, "appendBitmap" to true, "appendBitmapWithAlignment" to true, "appendBitmapWithAbsolutePosition" to true, "appendPrintableArea" to true)
+//  private var commandsSupport: Map<String, Boolean> = mapOf("appendEncoding" to true, "append" to true, "appendRaw" to true, "appendFontStyle" to true, "appendCodePage" to true, "appendInternational" to true, "appendLineFeed" to true, "appendUnitFeed" to true, "appendCharacterSpace" to true, "appendLineSpace" to true, "appendEmphasis" to true, "appendInvert" to true, "appendMultiple" to true, "appendUnderLine" to true, "appendAbsolutePosition" to true, "appendAlignment" to true, "appendHorizontalTabPosition" to true, "appendCutPaper" to true, "appendPeripheral" to true, "appendSound" to true, "appendBarcode" to true, "appendBitmap" to true, "appendBitmapWithAlignment" to true, "appendBitmapWithAbsolutePosition" to true, "appendPrintableArea" to true)
 
 
   override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
     channel = MethodChannel(flutterPluginBinding.binaryMessenger, "flutter_star_micronics")
-    channel.setMethodCallHandler(this)
+    channel.setMethodCallHandler(FlutterStarMicronicsPlugin())
+    setupPlugin(flutterPluginBinding.getFlutterEngine().getDartExecutor(), flutterPluginBinding.getApplicationContext())
   }
 
   override fun onMethodCall(@NonNull call: MethodCall, @NonNull rawResult: Result) {
-    val result: MethodResultWrapper = MethodResultWrapper(rawResult)
+    val result = MethodResultWrapper(rawResult)
     Thread(MethodRunner(call, result)).start()
   }
 
@@ -131,7 +133,7 @@ class FlutterStarMicronicsPlugin: FlutterPlugin, MethodCallHandler {
       }
       resp.success = true
       resp.message= "Successfully!"
-      resp.content = printers;
+      resp.content = printers
       result.success(resp.toJSON())
     } catch (e: StarIOPortException) {
       e.printStackTrace()
@@ -141,22 +143,24 @@ class FlutterStarMicronicsPlugin: FlutterPlugin, MethodCallHandler {
     }
   }
 
-
   private fun onPrint(@NonNull call: MethodCall, @NonNull result: Result){
     val address: String = call.argument<String>("address") as String
     val portName: String = call.argument<String>("portName") as String
     val emulation: String = call.argument<String>("emulation") as String
     val commands: ArrayList<Map<String, Any>> = call.argument<ArrayList<Map<String, Any>>>("commands") as ArrayList<Map<String, Any>>
-    var emulationObj: Emulation = getEmulation(emulation);
+    var emulationObj: Emulation = getEmulation(emulation)
     var resp = StarMicronicsResult()
     try {
       val builder: ICommandBuilder = StarIoExt.createCommandBuilder(getEmulation(emulation))
       builder.beginDocument()
+//      builder.appendInitialization(ICommandBuilder.InitializationType.Command)
       commands.forEach {
         onGenerateCommand(builder, call, it)
       }
       builder.endDocument()
-//      onSendCommand(portName, getPortSettingsOption(emulation), builder.getCommands(), applicationContext, result)
+      var contextD = applicationContext?.toString()
+      Log.d(logTag, "Context: $contextD")
+      onSendCommand(portName, getPortSettingsOption(emulation), builder.commands, applicationContext, result)
     } catch (e: StarIOPortException) {
       e.printStackTrace()
       resp.success = false
@@ -173,44 +177,88 @@ class FlutterStarMicronicsPlugin: FlutterPlugin, MethodCallHandler {
         Thread.sleep(100)
       } catch (e: InterruptedException) {
       }
+      var resp = StarMicronicsResult(success = false)
       var status: StarPrinterStatus = port.beginCheckedBlock()
       if (status.offline) {
-        throw StarIOPortException("A printer is offline")
+        resp.message = "A printer is offline"
+        result.success(resp.toJSON())
+        return
+//        throw StarIOPortException("A printer is offline")
       }
       port.writePort(commands, 0, commands.size)
-      port.setEndCheckedBlockTimeoutMillis(30000); // Change the timeout time of endCheckedBlock method.
+      port.setEndCheckedBlockTimeoutMillis(30000) // Change the timeout time of endCheckedBlock method.
       status = port.endCheckedBlock()
       if (status.coverOpen) {
-        result.error("STARIO_PORT_EXCEPTION", "Cover open", null)
+//        result.error("STARIO_PORT_EXCEPTION", "Cover open", null)
+        resp.message = "Cover open"
+        result.success(resp.toJSON())
         return
       } else if (status.receiptPaperEmpty) {
-        result.error("STARIO_PORT_EXCEPTION", "Empty paper", null)
+//        result.error("STARIO_PORT_EXCEPTION", "Empty paper", null)
+        resp.message = "Empty paper"
+        result.success(resp.toJSON())
         return
       } else if (status.offline) {
+        resp.message = "Printer offline"
+        result.success(resp.toJSON())
         result.error("STARIO_PORT_EXCEPTION", "Printer offline", null)
         return
       }
-      result.success("Success")
+//      result.success("Success")
+      resp.success = true
+      resp.message =  "Successfully"
+      result.success(resp.toJSON())
     } catch (e: Exception) {
       result.error("STARIO_PORT_EXCEPTION", e.message, null)
     }
   }
 
   private fun onGenerateCommand(builder: ICommandBuilder, call: MethodCall, command: Map<String, Any>){
+    var encoding: Charset = Charset.forName("UTF-8")
     Log.d(logTag, "onGenerateCommand: $command")
+    var commandId: String = command["id"] as String
+    if(!commandId.isNullOrEmpty()){
+      var commandValue = command["value"]
+
+      when(commandId){
+        "appendEncoding" -> {
+          var charsetName: String = "UTF-8"
+          if(!(commandValue as String).isNullOrEmpty()){
+            charsetName = commandValue
+          }
+          encoding = Charset.forName(charsetName)
+        }
+        "append" ->{
+           builder.append(commandValue.toString().toByteArray(encoding))
+        }
+        "appendRaw" ->{
+          builder.appendRaw(commandValue.toString().toByteArray(encoding))
+        }
+        "appendFontStyle" ->{
+          var fontStyle: ICommandBuilder.FontStyleType = ICommandBuilder.FontStyleType.A
+          if(!(commandValue as String).isNullOrEmpty()){
+            if(commandValue == "B"){
+              fontStyle = ICommandBuilder.FontStyleType.B
+            }
+          }
+          builder.appendFontStyle(fontStyle)
+        }
+      }
+    }
+
+
   }
 
-
   private fun getEmulation(emulation: String?): Emulation {
-    when (emulation) {
-      "StarPRNT" -> return Emulation.StarPRNT
-      "StarPRNTL" -> return Emulation.StarPRNTL
-      "StarLine" -> return Emulation.StarLine
-      "StarGraphic" -> return Emulation.StarGraphic
-      "EscPos" -> return Emulation.EscPos
-      "EscPosMobile" -> return Emulation.EscPosMobile
-      "StarDotImpact" -> return Emulation.StarDotImpact
-      else -> return Emulation.StarLine
+    return when (emulation) {
+      "StarPRNT" -> Emulation.StarPRNT
+      "StarPRNTL" -> Emulation.StarPRNTL
+      "StarLine" -> Emulation.StarLine
+      "StarGraphic" -> Emulation.StarGraphic
+      "EscPos" -> Emulation.EscPos
+      "EscPosMobile" -> Emulation.EscPosMobile
+      "StarDotImpact" -> Emulation.StarDotImpact
+      else -> Emulation.StarLine
     }
   }
 
