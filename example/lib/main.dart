@@ -72,25 +72,37 @@ class _MyAppState extends State<MyApp> {
       List<Map<String, dynamic>> commands = [];
 
       final cEncode = startCmd.appendEncoding(encoding: StarEncoding.UTF8);
-      final cText = startCmd.append("DATA");
+      final codePage = startCmd.appendCodePage(StarCodePageType.UTF8);
+      final cFontA = startCmd.appendFontStyle(StarFontStyleType.A);
+      final cFontB = startCmd.appendFontStyle(StarFontStyleType.B);
+      final cText = startCmd.append("FONT A DATA THỬ COI TIẾNG VIỆT SAO\n ");
+      final cText2 = startCmd.append("Font B data thử coi tiếng việt sao");
       final cMultiple1 =
           startCmd.appendMultiple('sadấd', width: 100, height: 20);
 
+      final cAppendLineFeed = startCmd.appendLineFeed(line: 4);
+
       commands.add(cEncode);
+      commands.add(codePage);
+      commands.add(cFontA);
       commands.add(cText);
-      commands.add(cMultiple1);
+      commands.add(cAppendLineFeed);
+      commands.add(cFontB);
+      commands.add(cText2);
+      // commands.add(cMultiple1);
+      commands.add(cAppendLineFeed);
 
       log(commands.toString());
-
-      setState(() {
-        AppLogs log = AppLogs(
-            isObject: true,
-            title:
-                "Print Test: ${printer.model} - ${printer.address} - ${printer.portName}");
-        logs.insert(0, log);
-      });
       try {
         final rep = await FlutterStarMicronics.onPrint(printer, commands);
+        setState(() {
+          AppLogs log = AppLogs(
+              isObject: true,
+              title:
+                  "Print Test: ${printer.model} - ${printer.address} - ${printer.portName}");
+          log.message = rep['message'];
+          logs.insert(0, log);
+        });
         print("Rep $rep");
         setLoading('PrintTestTCP', isLoading: false);
       } catch (e) {
@@ -187,22 +199,20 @@ class _MyAppState extends State<MyApp> {
                           Widget itemTitle;
                           Widget itemMessage;
                           if (logItem?.title != null) {
-                            itemTitle = Text(logItem.title,
+                            itemTitle = Text('${logItem.title}',
                                 style: TextStyle(
                                     fontWeight: FontWeight.w600, fontSize: 15));
                           }
                           if (logItem?.message != null) {
                             itemMessage = Padding(
                               padding: const EdgeInsets.only(left: 16, top: 4),
-                              child: Text(logItem.message),
+                              child: Text('${logItem?.message}'),
                             );
                           }
                           return ListTile(
-                            title: itemTitle,
-                            subtitle: itemMessage,
-                            contentPadding: EdgeInsets.all(0),
-                            // leading: Icon(Icons.topic),
-                          );
+                              title: itemTitle,
+                              subtitle: itemMessage,
+                              contentPadding: EdgeInsets.all(0));
                         },
                       )
                     ],

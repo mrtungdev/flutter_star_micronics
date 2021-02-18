@@ -91,13 +91,14 @@ class StarMicronicsCommand {
     return {"id": "appendInvert", "value": isInvert ?? true};
   }
 
-  Map<String, dynamic> appendMultiple(dynamic data, {int width, int height}) {
-    Map<String, dynamic> cmd = {"id": "appendMultiple", "value": data};
-    if (width != null) {
-      cmd['width'] = width;
-    }
-    if (height != null) {
-      cmd['height'] = height;
+  Map<String, dynamic> appendMultiple(int width, int height, {dynamic data}) {
+    Map<String, dynamic> cmd = {
+      "id": "appendMultiple",
+      "width": width,
+      "height": height
+    };
+    if (data != null) {
+      cmd["value"] = data;
     }
     return cmd;
   }
@@ -119,7 +120,9 @@ class StarMicronicsCommand {
   Map<String, dynamic> appendAlignment(StarAlignmentPosition align) {
     return {
       "id": "appendAlignment",
-      "value": align ?? _enumText(StarAlignmentPosition.Left)
+      "value": align != null
+          ? _enumText(align)
+          : _enumText(StarAlignmentPosition.Left)
     };
   }
 

@@ -1,8 +1,11 @@
 package com.tlt.flutter_star_micronics
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import android.provider.MediaStore
 import android.util.Log
 import androidx.annotation.NonNull
 import com.google.gson.Gson
@@ -21,6 +24,7 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry
+import java.io.IOException
 import java.nio.charset.Charset
 
 interface JSONConvertable {
@@ -78,7 +82,7 @@ class FlutterStarMicronicsPlugin: FlutterPlugin, MethodCallHandler {
   override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
     channel = MethodChannel(flutterPluginBinding.binaryMessenger, "flutter_star_micronics")
     channel.setMethodCallHandler(FlutterStarMicronicsPlugin())
-    setupPlugin(flutterPluginBinding.getFlutterEngine().getDartExecutor(), flutterPluginBinding.getApplicationContext())
+    setupPlugin(flutterPluginBinding.flutterEngine.dartExecutor, flutterPluginBinding.applicationContext)
   }
 
   override fun onMethodCall(@NonNull call: MethodCall, @NonNull rawResult: Result) {
@@ -153,13 +157,10 @@ class FlutterStarMicronicsPlugin: FlutterPlugin, MethodCallHandler {
     try {
       val builder: ICommandBuilder = StarIoExt.createCommandBuilder(getEmulation(emulation))
       builder.beginDocument()
-//      builder.appendInitialization(ICommandBuilder.InitializationType.Command)
       commands.forEach {
         onGenerateCommand(builder, call, it)
       }
       builder.endDocument()
-      var contextD = applicationContext?.toString()
-      Log.d(logTag, "Context: $contextD")
       onSendCommand(portName, getPortSettingsOption(emulation), builder.commands, applicationContext, result)
     } catch (e: StarIOPortException) {
       e.printStackTrace()
@@ -226,7 +227,12 @@ class FlutterStarMicronicsPlugin: FlutterPlugin, MethodCallHandler {
           if(!(commandValue as String).isNullOrEmpty()){
             charsetName = commandValue
           }
-          encoding = Charset.forName(charsetName)
+          encoding = try {
+            Charset.forName(charsetName)
+          } catch(e: IllegalArgumentException) {
+            Charset.forName("UTF-8")
+          }
+
         }
         "append" ->{
            builder.append(commandValue.toString().toByteArray(encoding))
@@ -243,6 +249,132 @@ class FlutterStarMicronicsPlugin: FlutterPlugin, MethodCallHandler {
           }
           builder.appendFontStyle(fontStyle)
         }
+        "appendCodePage" ->{
+          var codePage = getCodepage((commandValue as String))
+          Log.d(logTag, "appendCodePage: codePage $codePage")
+          builder.appendCodePage(codePage)
+        }
+        "appendInternational" ->{
+          builder.appendInternational(getInternational((commandValue as String)))
+        }
+        "appendLineFeed"->{
+          var bytesArray = command["bytesArray"]
+          var line = command["line"]
+          Log.d(logTag, "appendLineFeed: bytesArray $bytesArray - line $line")
+          if(bytesArray != null && line != null){
+            builder.appendLineFeed(bytesArray as ByteArray?, line as Int)
+          } else {
+            when {
+                bytesArray != null -> {
+                  builder.appendLineFeed(bytesArray as ByteArray?)
+                }
+                line != null -> {
+                  builder.appendLineFeed(line as Int)
+                }
+                else -> {
+                  builder.appendLineFeed()
+                }
+            }
+          }
+        }
+        "appendUnitFeed"->{
+          var bytesArray = command["bytesArray"]
+          var line = command["line"]
+          Log.d(logTag, "appendUnitFeed: bytesArray $bytesArray - line $line")
+          if(bytesArray != null && line != null){
+            builder.appendUnitFeed(bytesArray as ByteArray?, line as Int)
+          } else {
+            when {
+              bytesArray != null -> {
+                builder.appendLineFeed(bytesArray as ByteArray?)
+              }
+              line != null -> {
+                builder.appendUnitFeed(line as Int)
+              }
+            }
+          }
+        }
+        "appendCharacterSpace"->{
+          builder.appendCharacterSpace(commandValue as Int)
+        }
+        "appendLineSpace"->{
+          builder.appendLineSpace(commandValue as Int)
+        }
+        "appendEmphasis"->{
+          builder.appendEmphasis(commandValue as Boolean)
+        }
+        "appendInvert"->{
+          builder.appendInvert(commandValue as Boolean)
+        }
+        "appendMultiple"->{
+          var width = command["width"] as Int
+          var height = command["height"] as Int
+          if(commandValue != null){
+            builder.appendMultiple(commandValue.toString().toByteArray(encoding), width, height)
+          } else {
+            builder.appendMultiple(width, height)
+          }
+        }
+        "appendUnderLine"->{
+          builder.appendUnderLine(commandValue as Boolean)
+        }
+        "appendAbsolutePosition"->{
+          builder.appendAbsolutePosition(commandValue as Int)
+        }
+        "appendAlignment"->{
+          builder.appendAlignment(getAlignment((commandValue as String)))
+        }
+        "appendHorizontalTabPosition"->{
+          builder.appendHorizontalTabPosition(commandValue as IntArray?)
+        }
+        "appendCutPaper"->{
+          builder.appendCutPaper(getCutPaper((commandValue as String)))
+        }
+        "appendPeripheral"->{
+          var time = command["time"] as Int
+          if(time != null){
+            builder.appendPeripheral(getPeripheralChannel(commandValue as String), time)
+          } else {
+            builder.appendPeripheral(getPeripheralChannel(commandValue as String))
+          }
+        }
+        "appendSound"->{
+          var soundChl = getSoundChannel(commandValue as String)
+          var repeat = command["repeat"] as Int
+          var driveTime = command["driveTime"] as Int
+          var delayTime = command["delayTime"] as Int
+          if(repeat != null && driveTime != null && delayTime != null){
+            builder.appendSound(soundChl, repeat, driveTime, delayTime)
+          } else if(repeat != null){
+            builder.appendSound(soundChl, repeat)
+          } else {
+            builder.appendSound(soundChl)
+          }
+        }
+        "appendBarcode"->{
+          var codeSym = getBarcodeSymbology(command["symbology"] as String)
+          var width = getBarcodeWidth(command["width"] as String)
+          var height = command["height"] as Int
+          var hri = command["hri"] as Boolean
+          builder.appendBarcode(commandValue.toString().toByteArray(encoding), codeSym, width, height, hri)
+        }
+        "appendBitmap"->{
+          var rotate = getBitmapConverterRotation(command["rotation"] as String)
+          var width = command["width"] as Int
+          var diffusion = command["diffusion"] as Boolean
+          var bothScale = command["bothScale"] as Boolean
+
+          if(width != null && diffusion != null && bothScale != null){
+            try {
+              val imageUri: Uri = Uri.parse(commandValue.toString())
+              val bitmap: Bitmap = MediaStore.Images.Media.getBitmap(applicationContext.contentResolver, imageUri)
+            }catch(e: IOException) {
+
+            }
+          }
+
+        }
+
       }
     }
 
@@ -262,7 +394,80 @@ class FlutterStarMicronicsPlugin: FlutterPlugin, MethodCallHandler {
     }
   }
 
-  private fun getPortSettingsOption(emulation: String): String { // generate the portsettings depending on the emulation type
+
+  private fun getBitmapConverterRotation(code: String): ICommandBuilder.BitmapConverterRotation {
+    return try {
+      ICommandBuilder.BitmapConverterRotation.valueOf(code)
+    } catch(e: IllegalArgumentException) {
+      ICommandBuilder.BitmapConverterRotation.Normal
+    }
+  }
+
+  private fun getBarcodeWidth(code: String): ICommandBuilder.BarcodeWidth {
+    return try {
+      ICommandBuilder.BarcodeWidth.valueOf(code)
+    } catch(e: IllegalArgumentException) {
+      ICommandBuilder.BarcodeWidth.Mode1
+    }
+  }
+
+  private fun getBarcodeSymbology(code: String): ICommandBuilder.BarcodeSymbology {
+    return try {
+      ICommandBuilder.BarcodeSymbology.valueOf(code)
+    } catch(e: IllegalArgumentException) {
+      ICommandBuilder.BarcodeSymbology.Code128
+    }
+  }
+
+  private fun getPeripheralChannel(code: String): ICommandBuilder.PeripheralChannel {
+    return try {
+      ICommandBuilder.PeripheralChannel.valueOf(code)
+    } catch(e: IllegalArgumentException) {
+      ICommandBuilder.PeripheralChannel.No1
+    }
+  }
+
+  private fun getSoundChannel(code: String): ICommandBuilder.SoundChannel {
+    return try {
+      ICommandBuilder.SoundChannel.valueOf(code)
+    } catch(e: IllegalArgumentException) {
+      ICommandBuilder.SoundChannel.No1
+    }
+  }
+
+  private fun getCutPaper(code: String): ICommandBuilder.CutPaperAction {
+    return try {
+      ICommandBuilder.CutPaperAction.valueOf(code)
+    } catch(e: IllegalArgumentException) {
+      ICommandBuilder.CutPaperAction.PartialCut
+    }
+  }
+
+  private fun getCodepage(codepage: String): ICommandBuilder.CodePageType {
+    return try {
+      ICommandBuilder.CodePageType.valueOf(codepage)
+    } catch(e: IllegalArgumentException) {
+      ICommandBuilder.CodePageType.UTF8
+    }
+  }
+
+  private fun getAlignment(code: String): ICommandBuilder.AlignmentPosition {
+    return try {
+      ICommandBuilder.AlignmentPosition.valueOf(code)
+    } catch(e: IllegalArgumentException) {
+      ICommandBuilder.AlignmentPosition.Left
+    }
+  }
+
+  private fun getInternational(code: String): ICommandBuilder.InternationalType {
+    return try {
+      ICommandBuilder.InternationalType.valueOf(code)
+    } catch(e: IllegalArgumentException) {
+      ICommandBuilder.InternationalType.Legal
+    }
+  }
+
+  private fun getPortSettingsOption(emulation: String): String {
     when (emulation) {
       "EscPosMobile" -> return "mini"
       "EscPos" -> return "escpos"
