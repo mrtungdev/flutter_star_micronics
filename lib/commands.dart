@@ -189,11 +189,15 @@ class StarMicronicsCommand {
     return cmd;
   }
 
-  Map<String, dynamic> appendBitmap(dynamic data,
-      {bool diffusion,
-      int width,
-      bool bothScale,
-      StarBitmapConverterRotation rotation}) {
+  Map<String, dynamic> appendBitmap(
+    dynamic data, {
+    bool diffusion,
+    int width,
+    bool bothScale,
+    StarBitmapConverterRotation rotation,
+    StarAlignmentPosition aligmentPosition,
+    int position,
+  }) {
     Map<String, dynamic> cmd = {"id": "appendBitmap", "value": data};
     if (rotation != null) {
       cmd['rotation'] = _enumText(rotation);
@@ -204,48 +208,11 @@ class StarMicronicsCommand {
     if (bothScale != null) {
       cmd['bothScale'] = bothScale;
     }
-    return cmd;
-  }
-
-  Map<String, dynamic> appendBitmapWithAlignment(dynamic data,
-      {bool diffusion,
-      int width,
-      bool bothScale,
-      StarAlignmentPosition position}) {
-    Map<String, dynamic> cmd = {
-      "id": "appendBitmapWithAlignment",
-      "value": data
-    };
-    if (position != null) {
-      cmd['position'] = _enumText(position);
+    if (aligmentPosition != null) {
+      cmd['aligmentPosition'] = _enumText(aligmentPosition);
     }
-    if (diffusion != null) {
-      cmd['diffusion'] = diffusion;
-    }
-    if (bothScale != null) {
-      cmd['bothScale'] = bothScale;
-    }
-    return cmd;
-  }
-
-  Map<String, dynamic> appendBitmapWithAbsolutePosition(dynamic data,
-      {bool diffusion,
-      int width,
-      bool bothScale,
-      int position,
-      StarBitmapConverterRotation rotation}) {
-    Map<String, dynamic> cmd = {
-      "id": "appendBitmapWithAbsolutePosition",
-      "value": data
-    };
-    if (rotation != null) {
-      cmd['rotation'] = _enumText(rotation);
-    }
-    if (diffusion != null) {
-      cmd['diffusion'] = diffusion;
-    }
-    if (bothScale != null) {
-      cmd['bothScale'] = bothScale;
+    if (width != null) {
+      cmd['width'] = width;
     }
     if (position != null) {
       cmd['position'] = position;
@@ -256,7 +223,9 @@ class StarMicronicsCommand {
   Map<String, dynamic> appendPrintableArea(StarPrintableAreaType enu) {
     return {
       "id": "appendPrintableArea",
-      "value": enu ?? _enumText(StarPrintableAreaType.Standard)
+      "value": enu != null
+          ? _enumText(enu)
+          : _enumText(StarPrintableAreaType.Standard)
     };
   }
 }
