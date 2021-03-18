@@ -76,16 +76,16 @@ class _MyAppState extends State<MyApp> {
 
       final cEncode = startCmd.appendEncoding(encoding: StarEncoding.UTF8);
       final codePage = startCmd.appendCodePage(StarCodePageType.UTF8);
-      // final cFontA = startCmd.appendFontStyle(StarFontStyleType.A);
-      // final cFontB = startCmd.appendFontStyle(StarFontStyleType.B);
-      // final cText = startCmd.append(
-      //     "FONT A DATA ASKJH ASD K AKSD KASDH KASDH JKASDH KJASHD JKASDH JKASDHJKHD\n");
-      // final cText2 = startCmd.append("Font B data thử coi tiếng việt sao");
-      // final cMultiple1 = startCmd.appendMultiple(3, 4,
-      //     data:
-      //         "\nFONT A DATA ASKJH ASD K AKSD KASDH KASDH JKASDH KJASHD JKASDH JKASDHJKHD\n");
+      final cFontA = startCmd.appendFontStyle(StarFontStyleType.A);
+      final cFontB = startCmd.appendFontStyle(StarFontStyleType.B);
+      final cText = startCmd.append(
+          "FONT A DATA ASKJH ASD K AKSD KASDH KASDH JKASDH KJASHD JKASDH JKASDHJKHD\n");
+      final cText2 = startCmd.append("Font B data thử coi tiếng việt sao");
+      final cMultiple1 = startCmd.appendMultiple(3, 4,
+          data:
+              "\nFONT A DATA ASKJH ASD K AKSD KASDH KASDH JKASDH KJASHD JKASDH JKASDHJKHD\n");
 
-      // final cAppendLineFeed = startCmd.appendLineFeed(line: 1);
+      final cAppendLineFeed = startCmd.appendLineFeed(line: 1);
       final receiptImagePath = "assets/images/receipt.png";
       // Image img = Image.asset(receiptImagePath);
       ByteData bytesData = await rootBundle.load(receiptImagePath);
@@ -99,14 +99,14 @@ class _MyAppState extends State<MyApp> {
 
       commands.add(cEncode);
       commands.add(codePage);
-      // commands.add(cFontA);
-      // commands.add(cText);
-      // commands.add(cAppendLineFeed);
-      // commands.add(cFontB);
-      // commands.add(cText2);
-      // commands.add(cMultiple1);
-      // commands.add(cAppendLineFeed);
-      commands.add(cBitMap);
+      commands.add(cFontA);
+      commands.add(cText);
+      commands.add(cAppendLineFeed);
+      commands.add(cFontB);
+      commands.add(cText2);
+      commands.add(cMultiple1);
+      commands.add(cAppendLineFeed);
+      // commands.add(cBitMap);
       commands.add(cCut);
       try {
         final rep = await FlutterStarMicronics.onPrint(printer, commands);

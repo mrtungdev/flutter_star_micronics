@@ -1,5 +1,6 @@
 package com.tlt.flutter_star_micronics
 
+import android.R.attr.port
 import android.content.Context
 import android.graphics.*
 import android.net.Uri
@@ -175,6 +176,13 @@ class FlutterStarMicronicsPlugin : FlutterPlugin, MethodCallHandler {
             resp.success = false
             resp.message = "Print error"
             result.success(resp.toJSON())
+        } finally {
+            try {
+                var port = StarIOPort.getPort(portName, getPortSettingsOption(emulation), 10000, applicationContext)
+                // Port close
+                StarIOPort.releasePort(port)
+            } catch (e: StarIOPortException) {
+            }
         }
     }
 
