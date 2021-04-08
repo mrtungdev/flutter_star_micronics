@@ -78,7 +78,7 @@ class StarMicronicsUltilities {
   static StarMicronicsModel detectEmulation({String modelName}) {
     if (modelName == null || modelName.isEmpty) return null;
     return starMicronicsModels
-        .firstWhere((element) => element.models.indexOf(modelName) > -1);
+        .firstWhere((element) => element.models.contains(modelName), orElse: () => null);
   }
 
   static isCommandSupport(String command, String emulation) {}
