@@ -1,5 +1,5 @@
 
-## 0.0.3
+## 0.0.3+1
 - [Android] Add TSP100 Series
 ## 0.0.2
 
