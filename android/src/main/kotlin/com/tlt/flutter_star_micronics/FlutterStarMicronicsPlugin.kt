@@ -582,7 +582,7 @@ class FlutterStarMicronicsPlugin : FlutterPlugin, MethodCallHandler {
         when (emulation) {
             "EscPosMobile" -> return "mini"
             "EscPos" -> return "escpos"
-            "StarPRNT", "StarPRNTL" -> return "Portable;l"
+            "StarPRNT", "StarPRNTL" -> return "Portable"
             else -> return emulation
         }
     }
