@@ -17,7 +17,7 @@ final List<StarMicronicsModel> starMicronicsModels = [
   StarMicronicsModel(
       name: 'FVP10', emulation: 'StarLine', models: ["FVP10 (STR_T-001)"]),
   StarMicronicsModel(
-      name: 'TSP100', emulation: 'starGraphic', models: ["TSP113", "TSP143", "TSP143 (STR_T-001)"]),
+      name: 'TSP100', emulation: 'StarGraphic', models: ["TSP113", "TSP143", "TSP143 (STR_T-001)"]),
   StarMicronicsModel(name: 'TSP650II', emulation: 'StarLine', models: [
     "TSP654II (STR_T-001)",
     "TSP654 (STR_T-001)",
