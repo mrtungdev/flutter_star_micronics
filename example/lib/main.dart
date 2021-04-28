@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_star_micronics/flutter_star_micronics.dart';
+// import '../../lib/flutter_star_micronics.dart';
 import 'models.dart';
 
 void main() {
@@ -78,12 +79,13 @@ class _MyAppState extends State<MyApp> {
       final codePage = startCmd.appendCodePage(StarCodePageType.UTF8);
       final cFontA = startCmd.appendFontStyle(StarFontStyleType.A);
       final cFontB = startCmd.appendFontStyle(StarFontStyleType.B);
-      final cText = startCmd.append(
-          "FONT A DATA ASKJH ASD K AKSD KASDH KASDH JKASDH KJASHD JKASDH JKASDHJKHD\n");
-      final cText2 = startCmd.append("Font B data thử coi tiếng việt sao");
-      final cMultiple1 = startCmd.appendMultiple(3, 4,
-          data:
-              "\nFONT A DATA ASKJH ASD K AKSD KASDH KASDH JKASDH KJASHD JKASDH JKASDHJKHD\n");
+      final buzzer = startCmd.appendSound(StarSoundChannel.No1);
+      // final cText = startCmd.append(
+      //     "FONT A DATA ASKJH ASD K AKSD KASDH KASDH JKASDH KJASHD JKASDH JKASDHJKHD\n");
+      // final cText2 = startCmd.append("Font B data thử coi tiếng việt sao");
+      // final cMultiple1 = startCmd.appendMultiple(3, 4,
+      //     data:
+      //         "\nFONT A DATA ASKJH ASD K AKSD KASDH KASDH JKASDH KJASHD JKASDH JKASDHJKHD\n");
 
       final cAppendLineFeed = startCmd.appendLineFeed(line: 1);
       final receiptImagePath = "assets/images/receipt.png";
@@ -91,23 +93,25 @@ class _MyAppState extends State<MyApp> {
       ByteData bytesData = await rootBundle.load(receiptImagePath);
 
       var buffer = bytesData.buffer;
-      var m = base64.encode(Uint8List.view(buffer));
+      final m = Uint8List.view(buffer);
+      // var m = base64.encode(Uint8List.view(buffer));
 
       final cBitMap = startCmd.appendBitmap(m,
-          width: 576, bothScale: true, diffusion: true);
+          width: 576, bothScale: true, diffusion: true, isDirectImage: true);
       final cCut = startCmd.appendCutPaper(StarCutPaperAction.PartialCut);
 
       commands.add(cEncode);
       commands.add(codePage);
       commands.add(cFontA);
-      commands.add(cText);
+      // commands.add(cText);
       commands.add(cAppendLineFeed);
       commands.add(cFontB);
-      commands.add(cText2);
-      commands.add(cMultiple1);
+      // commands.add(cText2);
+      // commands.add(cMultiple1);
       commands.add(cAppendLineFeed);
-      // commands.add(cBitMap);
-      commands.add(cCut);
+      commands.add(buzzer);
+      commands.add(cBitMap);
+      // commands.add(cCut);
       try {
         final rep = await FlutterStarMicronics.onPrint(printer, commands);
         setState(() {

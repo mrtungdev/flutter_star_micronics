@@ -355,10 +355,10 @@ class FlutterStarMicronicsPlugin : FlutterPlugin, MethodCallHandler {
                     }
                 }
                 "appendSound" -> {
-                    var soundChl = getSoundChannel(commandValue as String)
-                    var repeat = command["repeat"] as Int
-                    var driveTime = command["driveTime"] as Int
-                    var delayTime = command["delayTime"] as Int
+                    val soundChl = getSoundChannel(commandValue as String)
+                    val repeat = command["repeat"] as Int?
+                    val driveTime = command["driveTime"] as Int?
+                    val delayTime = command["delayTime"] as Int?
                     if (repeat != null && driveTime != null && delayTime != null) {
                         builder.appendSound(soundChl, repeat, driveTime, delayTime)
                     } else if (repeat != null) {
@@ -368,17 +368,76 @@ class FlutterStarMicronicsPlugin : FlutterPlugin, MethodCallHandler {
                     }
                 }
                 "appendBarcode" -> {
-                    var codeSym = getBarcodeSymbology(command["symbology"] as String)
-                    var width = getBarcodeWidth(command["width"] as String)
-                    var height = command["height"] as Int
-                    var hri = command["hri"] as Boolean
+                    val codeSym = getBarcodeSymbology(command["symbology"] as String)
+                    val width = getBarcodeWidth(command["width"] as String)
+                    val height = command["height"] as Int
+                    val hri = command["hri"] as Boolean
                     builder.appendBarcode(commandValue.toString().toByteArray(encoding), codeSym, width, height, hri)
+                }
+                "appendBitmapImg" -> {
+
+                    try {
+
+                        val width = command["width"] as? Int
+                        Log.d(logTag, "appendBitmap: width $width")
+                        val diffusion = command["diffusion"] as? Boolean
+                        Log.d(logTag, "appendBitmap: diffusion $diffusion")
+                        val bothScale = command["bothScale"] as? Boolean
+                        Log.d(logTag, "appendBitmap: bothScale $bothScale")
+                        val position = command["position"] as? Int
+                        Log.d(logTag, "appendBitmap: position $position")
+                        val aligmentPos = getAlignment(command["aligmentPosition"] as? String)
+                        Log.d(logTag, "appendBitmap: aligmentPos $aligmentPos")
+                        val rotate = getBitmapConverterRotation(command["rotation"] as? String)
+                        Log.d(logTag, "appendBitmap: rotate $rotate")
+
+//                        val imageUri: Uri = Uri.parse(commandValue.toString())
+//                        val bitmap: Bitmap = getCapturedImage(imageUri)
+
+                        val decodedString: ByteArray = (commandValue as ByteArray) ;//Base64.decode(bitmapString, Base64.DEFAULT)
+                        val decodedByte = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
+
+                        val bitmap: Bitmap? = decodedByte// convertBase64toBitmap(commandValue as String)
+                        Log.d(logTag, "appendBitmap: bitmap $bitmap")
+                        if (width != null && bothScale != null && diffusion != null) {
+
+                            when {
+                                position != null -> {
+                                    builder.appendBitmapWithAbsolutePosition(bitmap, diffusion, width, bothScale, rotate, position)
+                                }
+                                aligmentPos != null -> {
+                                    builder.appendBitmapWithAlignment(bitmap, diffusion, width, bothScale, rotate, aligmentPos)
+                                }
+                                else -> {
+                                    builder.appendBitmap(bitmap, diffusion, width, bothScale, rotate)
+                                }
+                            }
+
+                        } else {
+
+                            when {
+                                position != null -> {
+                                    builder.appendBitmapWithAbsolutePosition(bitmap, diffusion!!, rotate, position)
+                                }
+                                aligmentPos != null -> {
+                                    builder.appendBitmapWithAlignment(bitmap, diffusion!!, rotate, aligmentPos)
+                                }
+                                else -> {
+                                    builder.appendBitmap(bitmap, diffusion!!, rotate)
+                                }
+                            }
+
+                        }
+                    } catch (e: IOException) {
+
+                    }
+
                 }
                 "appendBitmap" -> {
 
                     try {
 
-                        var width = command["width"] as? Int
+                        val width = command["width"] as? Int
                         Log.d(logTag, "appendBitmap: width $width")
                         var diffusion = command["diffusion"] as? Boolean
                         Log.d(logTag, "appendBitmap: diffusion $diffusion")
@@ -427,7 +486,6 @@ class FlutterStarMicronicsPlugin : FlutterPlugin, MethodCallHandler {
                     } catch (e: IOException) {
 
                     }
-
 
                 }
                 "appendPrintableArea" -> {

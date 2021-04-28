@@ -197,8 +197,10 @@ class StarMicronicsCommand {
     StarBitmapConverterRotation rotation,
     StarAlignmentPosition aligmentPosition,
     int position,
+    bool isDirectImage = false,
   }) {
-    Map<String, dynamic> cmd = {"id": "appendBitmap", "value": data};
+    final cmdId = isDirectImage ? "appendBitmapImg" : "appendBitmap";
+    Map<String, dynamic> cmd = {"id": cmdId, "value": data};
     if (rotation != null) {
       cmd['rotation'] = _enumText(rotation);
     }
