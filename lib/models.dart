@@ -51,47 +51,93 @@ class StarMicronicsPrinter {
 
 class StarMicronicsResponse {
   StarMicronicsResponse({
-    this.type,
-    this.success,
+    this.coverOpen,
+    this.cutterError,
     this.message,
+    this.offline,
+    this.overTemp,
+    this.receiptPaperEmpty,
+    this.success,
+    this.type,
+    this.errorMessage,
     this.content,
+    this.infoMessage,
   });
 
-  String type;
-  bool success;
-  String message;
-  dynamic content;
+  final bool coverOpen;
+  final bool cutterError;
+  final String message;
+  final bool offline;
+  final bool overTemp;
+  final bool receiptPaperEmpty;
+  final bool success;
+  final String type;
+  final String errorMessage;
+  final dynamic content;
+  final String infoMessage;
 
   StarMicronicsResponse copyWith({
-    String type,
-    bool success,
+    bool coverOpen,
+    bool cutterError,
     String message,
+    bool offline,
+    bool overTemp,
+    bool receiptPaperEmpty,
+    bool success,
+    String type,
+    String errorMessage,
     dynamic content,
+    String infoMessage,
   }) =>
       StarMicronicsResponse(
-        type: type ?? this.type,
-        success: success ?? this.success,
+        coverOpen: coverOpen ?? this.coverOpen,
+        cutterError: cutterError ?? this.cutterError,
         message: message ?? this.message,
+        offline: offline ?? this.offline,
+        overTemp: overTemp ?? this.overTemp,
+        receiptPaperEmpty: receiptPaperEmpty ?? this.receiptPaperEmpty,
+        success: success ?? this.success,
+        type: type ?? this.type,
+        errorMessage: errorMessage ?? this.errorMessage,
         content: content ?? this.content,
+        infoMessage: infoMessage ?? this.infoMessage,
       );
 
   factory StarMicronicsResponse.fromRawJson(String str) =>
-      StarMicronicsResponse.fromJson(json.decode(str));
+      StarMicronicsResponse.fromMap(json.decode(str));
 
-  String toRawJson() => json.encode(toJson());
+  String toJson() => json.encode(toMap());
 
-  factory StarMicronicsResponse.fromJson(Map<String, dynamic> json) =>
+  factory StarMicronicsResponse.fromMap(Map<String, dynamic> json) =>
       StarMicronicsResponse(
-        type: json["type"] == null ? null : json["type"],
-        success: json["success"] == null ? null : json["success"],
+        coverOpen: json["coverOpen"] == null ? null : json["coverOpen"],
+        cutterError: json["cutterError"] == null ? null : json["cutterError"],
         message: json["message"] == null ? null : json["message"],
+        offline: json["offline"] == null ? null : json["offline"],
+        overTemp: json["overTemp"] == null ? null : json["overTemp"],
+        receiptPaperEmpty: json["receiptPaperEmpty"] == null
+            ? null
+            : json["receiptPaperEmpty"],
+        success: json["success"] == null ? null : json["success"],
+        type: json["type"] == null ? null : json["type"],
+        errorMessage:
+            json["errorMessage"] == null ? null : json["errorMessage"],
         content: json["content"] == null ? null : json["content"],
+        infoMessage: json["infoMessage"] == null ? null : json["infoMessage"],
       );
 
-  Map<String, dynamic> toJson() => {
-        "type": type == null ? null : type,
-        "success": success == null ? null : success,
+  Map<String, dynamic> toMap() => {
+        "coverOpen": coverOpen == null ? null : coverOpen,
+        "cutterError": cutterError == null ? null : cutterError,
         "message": message == null ? null : message,
-        "content": content == null ? null : content,
+        "offline": offline == null ? null : offline,
+        "overTemp": overTemp == null ? null : overTemp,
+        "receiptPaperEmpty":
+            receiptPaperEmpty == null ? null : receiptPaperEmpty,
+        "success": success == null ? null : success,
+        "type": type == null ? null : type,
+        "errorMessage": errorMessage == null ? null : errorMessage,
+        "content": content == null ? null : content.toMap(),
+        "infoMessage": infoMessage == null ? null : infoMessage,
       };
 }

@@ -1,5 +1,3 @@
-import 'dart:convert';
-import 'dart:developer';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -100,17 +98,17 @@ class _MyAppState extends State<MyApp> {
           width: 576, bothScale: true, diffusion: true, isDirectImage: true);
       final cCut = startCmd.appendCutPaper(StarCutPaperAction.PartialCut);
 
-      commands.add(cEncode);
-      commands.add(codePage);
-      commands.add(cFontA);
+      // commands.add(cEncode);
+      // commands.add(codePage);
+      // commands.add(cFontA);
       // commands.add(cText);
-      commands.add(cAppendLineFeed);
-      commands.add(cFontB);
+      // commands.add(cAppendLineFeed);
+      // commands.add(cFontB);
       // commands.add(cText2);
       // commands.add(cMultiple1);
-      commands.add(cAppendLineFeed);
+      // commands.add(cAppendLineFeed);
       commands.add(buzzer);
-      commands.add(cBitMap);
+      // commands.add(cBitMap);
       // commands.add(cCut);
       try {
         final rep = await FlutterStarMicronics.onPrint(printer, commands);
@@ -119,10 +117,10 @@ class _MyAppState extends State<MyApp> {
               isObject: true,
               title:
                   "Print Test: ${printer.model} - ${printer.address} - ${printer.portName}");
-          log.message = rep['message'];
+          log.message = rep.message;
           logs.insert(0, log);
         });
-        print("Rep $rep");
+        print("Rep ${rep.toString()}");
         setLoading('PrintTestTCP', isLoading: false);
       } catch (e) {
         print("Error ${e.toString()}");

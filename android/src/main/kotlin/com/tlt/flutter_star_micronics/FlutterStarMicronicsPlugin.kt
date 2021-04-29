@@ -44,8 +44,15 @@ data class StarMicronicsResult(
         var type: String? = null,
         var success: Boolean? = null,
         var message: String? = null,
-        var content: Any? = null
-) : JSONConvertable
+        var content: Any? = null,
+        var offline:Boolean = false,
+        var coverOpen:Boolean = false,
+        var overTemp:Boolean = false,
+        var cutterError:Boolean = false,
+        var receiptPaperEmpty:Boolean = false,
+        var errorMessage: String? = null,
+        var infoMessage:String? = null
+        ) : JSONConvertable
 
 class StarPrinterInfo(
         var address: String? = null,
@@ -91,7 +98,7 @@ class FlutterStarMicronicsPlugin : FlutterPlugin, MethodCallHandler {
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "flutter_star_micronics")
         channel.setMethodCallHandler(FlutterStarMicronicsPlugin())
-        setupPlugin(flutterPluginBinding.flutterEngine.dartExecutor, flutterPluginBinding.applicationContext)
+        setupPlugin(flutterPluginBinding.binaryMessenger, flutterPluginBinding.applicationContext)
     }
 
     override fun onMethodCall(@NonNull call: MethodCall, @NonNull rawResult: Result) {
@@ -135,13 +142,13 @@ class FlutterStarMicronicsPlugin : FlutterPlugin, MethodCallHandler {
     private fun onDiscoveryTCP(@NonNull call: MethodCall, @NonNull result: Result) {
         var resp = StarMicronicsResult()
         try {
-            var printers: MutableList<StarPrinterInfo> = ArrayList()
+            val printers: MutableList<StarPrinterInfo> = ArrayList()
             val portList: List<PortInfo> = StarIOPort.searchPrinter("TCP:")
             for (port in portList) {
                 Log.i(logTag, "Port Name: " + port.portName)
                 Log.i(logTag, "MAC Address: " + port.macAddress)
                 Log.i(logTag, "Model Name: " + port.modelName)
-                var printer = StarPrinterInfo(port.macAddress, port.portName, port.modelName)
+                val printer = StarPrinterInfo(port.macAddress, port.portName, port.modelName)
                 printers.add(printer)
             }
             resp.success = true
@@ -174,59 +181,106 @@ class FlutterStarMicronicsPlugin : FlutterPlugin, MethodCallHandler {
         } catch (e: StarIOPortException) {
             e.printStackTrace()
             resp.success = false
-            resp.message = "Print error"
+            resp.message = "Command build error"
             result.success(resp.toJSON())
         } finally {
-            try {
-                var port = StarIOPort.getPort(portName, getPortSettingsOption(emulation), 10000, applicationContext)
-                // Port close
-                StarIOPort.releasePort(port)
-            } catch (e: StarIOPortException) {
-            }
+//            try {
+//                var port = StarIOPort.getPort(portName, getPortSettingsOption(emulation), 10000, applicationContext)
+//                // Port close
+//                StarIOPort.releasePort(port)
+//            } catch (e: StarIOPortException) {
+//            }
         }
     }
 
     private fun onSendCommand(portName: String, portSettings: String, commands: ByteArray, context: Context, @NonNull result: Result) {
         var port: StarIOPort? = null
+        var errorPosSting = "Opening. "
         try {
             port = StarIOPort.getPort(portName, portSettings, 10000, applicationContext)
+            errorPosSting += "Port Opened,"
             try {
                 Thread.sleep(100)
             } catch (e: InterruptedException) {
             }
             var resp = StarMicronicsResult(success = false)
             var status: StarPrinterStatus = port.beginCheckedBlock()
-            if (status.offline) {
-                resp.message = "A printer is offline"
-                result.success(resp.toJSON())
-                return
-//        throw StarIOPortException("A printer is offline")
+            errorPosSting += "got status for begin Check,"
+            resp.offline = status.offline
+            resp.coverOpen = status.coverOpen
+            resp.cutterError = status.cutterError
+            resp.receiptPaperEmpty = status.receiptPaperEmpty
+            var isSuccess = true
+            when {
+                status.offline -> {
+                    resp.errorMessage = "A printer is offline"
+                    isSuccess = false
+                }
+                status.coverOpen -> {
+                    resp.errorMessage = "Printer cover is open"
+                    isSuccess = false
+                }
+                status.receiptPaperEmpty -> {
+                    resp.errorMessage = "Paper empty"
+                    isSuccess = false
+                }
+                status.presenterPaperJamError -> {
+                    resp.errorMessage = "Paper Jam"
+                    isSuccess = false
+                }
             }
-            port.writePort(commands, 0, commands.size)
-            port.setEndCheckedBlockTimeoutMillis(30000) // Change the timeout time of endCheckedBlock method.
-            status = port.endCheckedBlock()
-            if (status.coverOpen) {
-//        result.error("STARIO_PORT_EXCEPTION", "Cover open", null)
-                resp.message = "Cover open"
-                result.success(resp.toJSON())
-                return
-            } else if (status.receiptPaperEmpty) {
-//        result.error("STARIO_PORT_EXCEPTION", "Empty paper", null)
-                resp.message = "Empty paper"
-                result.success(resp.toJSON())
-                return
-            } else if (status.offline) {
-                resp.message = "Printer offline"
-                result.success(resp.toJSON())
-                result.error("STARIO_PORT_EXCEPTION", "Printer offline", null)
-                return
+            if (status.receiptPaperNearEmptyInner || status.receiptPaperNearEmptyOuter){
+                resp.infoMessage = "Paper near empty"
             }
-//      result.success("Success")
-            resp.success = true
+            if (isSuccess){
+
+                errorPosSting += "Writing to port,"
+                port.writePort(commands, 0, commands.size)
+                errorPosSting += "setting delay End check bock,"
+                port.setEndCheckedBlockTimeoutMillis(30000); // Change the timeout time of endCheckedBlock method.
+                errorPosSting += "doing End check bock,"
+                try {
+                    status = port.endCheckedBlock()
+                }catch (e:Exception){
+
+                }
+
+                resp.offline = status.offline
+                resp.coverOpen = status.coverOpen
+                resp.cutterError = status.cutterError
+                resp.receiptPaperEmpty = status.receiptPaperEmpty
+                when {
+                    status.offline -> {
+                        resp.errorMessage = "A printer is offline"
+                        isSuccess = false
+                    }
+                    status.coverOpen -> {
+                        resp.errorMessage = "Printer cover is open"
+                        isSuccess = false
+                    }
+                    status.receiptPaperEmpty -> {
+                        resp.errorMessage = "Paper empty"
+                        isSuccess = false
+                    }
+                    status.presenterPaperJamError -> {
+                        resp.errorMessage = "Paper Jam"
+                        isSuccess = false
+                    }
+                }
+            }
+            resp.success = isSuccess
             resp.message = "Successfully"
             result.success(resp.toJSON())
         } catch (e: Exception) {
-            result.error("STARIO_PORT_EXCEPTION", e.message, null)
+            result.error("STARIO_PORT_EXCEPTION", e.message  + " Failed After $errorPosSting", null)
+        }finally {
+            if (port != null) {
+                try {
+                    StarIOPort.releasePort(port)
+                } catch (e: Exception) {
+//            result.error("PRINT_ERROR", e.message, null)
+                }
+            }
         }
     }
 
@@ -637,11 +691,11 @@ class FlutterStarMicronicsPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     private fun getPortSettingsOption(emulation: String): String {
-        when (emulation) {
-            "EscPosMobile" -> return "mini"
-            "EscPos" -> return "escpos"
-            "StarPRNT", "StarPRNTL" -> return "Portable"
-            else -> return emulation
+        return when (emulation) {
+            "EscPosMobile" -> "mini"
+            "EscPos" -> "escpos"
+            "StarPRNT", "StarPRNTL" -> "Portable"
+            else -> emulation
         }
     }
 

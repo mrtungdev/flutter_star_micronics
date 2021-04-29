@@ -55,7 +55,7 @@ class FlutterStarMicronics {
     return [];
   }
 
-  static Future<dynamic> onPrint(
+  static Future<StarMicronicsResponse> onPrint(
       StarMicronicsPrinter printer, List<Map<String, dynamic>> commands) async {
     final Map<String, dynamic> params = {
       "address": printer.address,
@@ -63,6 +63,15 @@ class FlutterStarMicronics {
       "emulation": printer.emulation,
       "commands": commands
     };
-    return await _channel.invokeMethod('print', params);
+    final rep = await _channel.invokeMethod('print', params);
+    if (rep != null) {
+      try {
+        final response = StarMicronicsResponse.fromRawJson(rep);
+        return response;
+      } catch (e) {
+        throw e;
+      }
+    }
+    return null;
   }
 }
